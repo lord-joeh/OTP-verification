@@ -1,0 +1,29 @@
+<%- include('layout/header'); -%>
+
+<div>
+  <form method="post" action="/resend-otp" class="container col-md-6">
+    <h1 class="fw-bold mb-3 mt-3 fs-2">🧑‍💻 Resend OTP 🧑‍💻</h1>
+
+    <div class="form-floating mb-3">
+      <input
+        type="email"
+        class="form-control rounded-3"
+        id="floatingInput verifyotpmail"
+        placeholder="name@example.com"
+        name="email"
+        value=" <%= locals.email %> "
+        
+      />
+      <label for="floatingInput">Email address</label>
+    </div>
+    <p class="text-body-danger" style="color: #bb2124">
+      <% if (locals.errorMessage) { %> <%= locals.errorMessage %> <% } %>
+    </p>
+    <p class="text-body-danger" style="color: #22bb33">
+      <% if (locals.successMessage) { %> <%= locals.successMessage %> <% }%>
+    </p>
+    <button class="w-100 mb-2 btn btn-lg rounded-3 btn-primary" type="submit">
+      Resend
+    </button>
+  </form>
+</div>

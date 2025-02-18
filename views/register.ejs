@@ -1,0 +1,56 @@
+<%- include('layout/header'); -%>
+
+<div class="container">
+  <form method="post" action="/register" class="container col-md-6">
+    <h1 class="fw-bold mb-3 mt-3 fs-2">🧑‍💻 Sign up 🧑‍💻</h1>
+
+    <div class="form-floating mb-3">
+      <input
+        type="text"
+        class="form-control rounded-3"
+        id="floatingInput"
+        placeholder="username"
+        name="name"
+        required
+      />
+      <label for="floatingInput">Username</label>
+    </div>
+
+    <div class="form-floating mb-3">
+      <input
+        type="email"
+        class="form-control rounded-3"
+        id="floatingInput registermail"
+        placeholder="name@example.com"
+        name="email"
+        required
+      />
+      <label for="floatingInput">Email address</label>
+    </div>
+
+    <div class="form-floating mb-3">
+      <input
+        type="password"
+        class="form-control rounded-3"
+        id="floatingPassword"
+        placeholder="Password"
+        name="password"
+        required
+      />
+      <label for="floatingPassword">Password</label>
+    </div>
+    <p class="text-body-danger" style="color: #bb2124">
+      <% if (locals.errorMessage) { %> <%= locals.errorMessage %> <% } %>
+    </p>
+    <p class="text-body-danger" style="color: #22bb33">
+      <% if (locals.successMessage) { %> <%= locals.successMessage %> <% }%>
+    </p>
+    <button class="w-100 mb-2 btn btn-lg rounded-3 btn-primary" type="submit">
+      Sign up
+    </button>
+    <p class="text-body-secondary">
+      Already have an account?
+      <a href="/login" style="text-decoration: none"> Sign in here</a>
+    </p>
+  </form>
+</div>

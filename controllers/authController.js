@@ -20,12 +20,12 @@ const generateOTP = () => {
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    
+    req.session.email = email;
     // Check if user already exists
     let user = await User.findOne({ email });
 
     if (user) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).render('register.ejs',{ errorMessage: 'User already exists' });
     }
 
     // Generate OTP and set expiry
@@ -47,29 +47,39 @@ exports.register = async (req, res) => {
       text: `Your OTP verification code is ${otp}`,
     });
 
-    res.status(201).json({
-      message:
-        'User registered successfully. Please verify OTP sent to your email.',
+    res.render('verifyOTP.ejs', {
+      successMessage:
+        'User registered successfully. Please verify the OTP sent to your email.',
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: 'Error registering user', error: error.message });
+    res.status(500).render('register.ejs', {
+      errorMessage: 'Error registering user',
+      error: error.message,
+    });
   }
 };
 
 // Verify OTP
 exports.verifyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { otp } = req.body;
+    const email = req.session.email;
+
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(400).json({ message: 'User not found' });
+    if (!user)
+      return res
+        .status(400)
+        .render('verifyOTP.ejs', { errorMessage: 'User Not Found' });
     if (user.isVerified)
-      return res.status(400).json({ message: 'User already verified' });
+      return res
+        .status(400)
+        .render('verifyOTP.ejs', { errorMessage: 'User already verified' });
 
     if (user.otp !== otp || user.otpExpiry < new Date()) {
-      return res.status(400).json({ message: 'Invalid or Expired OTP' });
+      return res
+        .status(400)
+        .render('verifyOTP.ejs', { errorMessage: 'Invalid or Expired OTP' });
     }
 
     user.isVerified = true;
@@ -78,9 +88,13 @@ exports.verifyOTP = async (req, res) => {
 
     await user.save();
 
-    res.json({ message: 'Email verified successfully. You can now log in.' });
+    res.render('login.ejs', {
+      successMessage: 'Email verified successfully. You can now log in.',
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error verifying OTP', error });
+    res
+      .status(500)
+      .render('verifyOTP.ejs', { errorMessage: 'Error verifying OTP', error });
   }
 };
 
@@ -90,10 +104,17 @@ exports.resendOTP = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(400).json({ message: 'User not found' });
+    if (!user)
+      return res
+        .status(400)
+        .render('verifyOTP.ejs', {
+          errorMessage: 'User Not Found',
+        });
 
     if (user.isVerified)
-      return res.status(400).json({ message: 'User already verified' });
+      return res
+        .status(400)
+        .render('login.ejs', { errorMessage: 'User already verified' });
 
     const otp = generateOTP();
     user.otp = otp;
@@ -106,9 +127,11 @@ exports.resendOTP = async (req, res) => {
       subject: 'Resent OTP verification',
       text: `Your new OTP is ${otp}`,
     });
-    res.json({ message: 'OTP resent successfully.' });
+    res.render('verifyOTP.ejs', { successMessage: 'OTP resent successfully.' });
   } catch (error) {
-    res.status(500).json({ message: 'Error resending OTP', error });
+    res
+      .status(500)
+      .render('verifyOTP.ejs', { errorMessage: 'Error resending OTP', error });
   }
 };
 
@@ -118,33 +141,43 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(400).json({ message: 'User not found' });
+    if (!user)
+      return res.status(400).render('login.ejs', {
+        errorMessage: 'User does not exist please create an account',
+      });
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid)
-      return res.status(400).json({ message: 'Incorrect Password' });
-
-    if (!user.isVerified)
       return res
         .status(400)
-        .json({ message: 'Email not verified. Please verify OTP' });
+        .render('login.ejs', { errorMessage: 'Incorrect Password' });
+
+    if (!user.isVerified)
+      return res.status(400).render('verifyOTP.ejs', {
+        errorMessage: 'Email not verified. Please verify OTP',
+      });
 
     req.session.user = { id: user._id, email: user.email, name: user.name };
-    res.json({ message: 'Login successful' });
+    res.redirect('/dashboard');
   } catch (error) {
-    res.status(500).json({ message: 'Error Logging in user', error });
+    res
+      .status(500)
+      .render('login.ejs', { errorMessage: 'Error Logging in user', error });
   }
 };
 
 // Logout User
 exports.logout = (req, res) => {
+  req.session.message = 'Logged out successfully';
+  const successMessage = req.session.message;
   req.session.destroy((err) => {
-    if (err) return res.status(500).json({ message: 'Error logging out' });
-    res.json({ message: 'Logged out successfully' });
+    if (err) return res.status(500).render('dashboard.ejs',{ errorMessage: 'Error logging out' });
+    res.render('login.ejs', { successMessage });
   });
 };
 
 // Dashboard (Protected Route)
 exports.dashboard = async (req, res) => {
-  res.json({ message: `Welcome to the Dashboard, ${req.session.user.name}` });
+  const { name, email } = req.session.user;
+  res.render('dashboard.ejs', { name, email });
 };
